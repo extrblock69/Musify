@@ -8,8 +8,8 @@
         body { font-family: Arial, sans-serif; padding: 20px; background: #121212; color: #fff; }
         h1 { border-bottom: 1px solid #333; padding-bottom: 10px; }
         section { background: #1e1e1e; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
-        input, button { padding: 10px; margin-right: 10px; border: none; border-radius: 4px; }
-        input { width: 300px; }
+        input, button { padding: 10px; margin-right: 10px; border: none; border-radius: 4px; margin-bottom: 10px; }
+        input { width: 350px; }
         button { background: #D3BEAB; color: #000; cursor: pointer; font-weight: bold; }
         button:hover { background: #bba796; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
@@ -19,8 +19,9 @@
         .card p { margin: 0; font-size: 12px; color: #aaa; }
         pre { background: #000; padding: 10px; border-radius: 4px; overflow-x: auto; color: #0f0; }
         .loader { display: none; color: #D3BEAB; margin-top: 10px; }
-        audio { width: 100%; margin-top: 15px; }
+        audio, video { width: 100%; margin-top: 15px; background: #000; }
         .highlight { border-left: 5px solid #D3BEAB; }
+        .action-btns { margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -47,37 +48,52 @@
 
     <!-- SECTION 3: Raw Spoofed Streaming API -->
     <section id="raw-stream-section" class="highlight">
-        <h2>3. RAW Spoofed Stream & Play Audio API <span style="font-size:12px; font-weight:normal; color:#ccc">(Powered by direct youtube_explode_dart logic)</span></h2>
-        <p style="font-size: 14px; color: #aaa; margin-top: 0;">This endpoint natively replicates the exact JSON payload Client Spoofing and Proxy rotation logic, bypassing yt-dlp entirely.</p>
+        <h2>3. RAW Spoofed Stream Extraction</h2>
+        <p style="font-size: 14px; color: #aaa; margin-top: 0;">This endpoint natively replicates the exact JSON payload Client Spoofing and Proxy rotation logic to extract the direct URL.</p>
         <input type="text" id="rawStreamInput" value="YQHsXMglC9A" placeholder="Enter YouTube ID...">
-        <button onclick="getRawStream()">Load RAW Audio Stream</button>
+        <button onclick="getRawStream()">Extract RAW Stream URL</button>
         <span id="rawStreamLoader" class="loader">Testing proxies and extracting manifest...</span>
-        <audio id="rawAudioPlayer" controls></audio>
         <pre id="rawStreamResult" style="margin-top:10px;">Waiting for input...</pre>
+        <div id="rawActionContainer" class="action-btns" style="display:none;">
+            <button onclick="sendToPlayer('raw')">Send Extracted URL to Universal Player ⬇️</button>
+        </div>
     </section>
 
     <!-- SECTION 4: Original yt-dlp Stream API -->
     <section id="stream-section">
-        <h2>4. Stream & Play Audio API (Fallback/yt-dlp)</h2>
+        <h2>4. Fallback Stream Extraction (yt-dlp)</h2>
         <input type="text" id="streamInput" value="YQHsXMglC9A" placeholder="Enter YouTube ID...">
-        <button onclick="getStream()">Load Audio Stream</button>
+        <button onclick="getStream()">Extract Stream URL</button>
         <span id="streamLoader" class="loader">Loading...</span>
-        <audio id="audioPlayer" controls></audio>
         <pre id="streamResult" style="margin-top:10px;">Waiting for input...</pre>
+        <div id="fallbackActionContainer" class="action-btns" style="display:none;">
+            <button onclick="sendToPlayer('fallback')">Send Extracted URL to Universal Player ⬇️</button>
+        </div>
     </section>
 
-    <!-- SECTION 5: Related API -->
+    <!-- SECTION 5: Universal Player & Downloader -->
+    <section id="universal-player-section" style="border: 2px dashed #D3BEAB;">
+        <h2>5. Universal Player & Downloader</h2>
+        <p style="font-size: 14px; color: #aaa; margin-top: 0;">Paste a direct Google CDN URL here or send it from the extraction tools above.</p>
+        <input type="text" id="mediaUrlInput" placeholder="https://rr...googlevideo.com/videoplayback?..." style="width: 70%;">
+        <button onclick="playMedia()">▶ Play Media</button>
+        <button onclick="downloadMedia()">⬇ Download Media</button>
+
+        <video id="mediaPlayer" controls></video>
+    </section>
+
+    <!-- SECTION 6: Related API -->
     <section id="related-section">
-        <h2>5. Related Videos API</h2>
+        <h2>6. Related Videos API</h2>
         <input type="text" id="relatedInput" value="YQHsXMglC9A" placeholder="Enter YouTube ID...">
         <button onclick="getRelated()">Find Related</button>
         <span id="relatedLoader" class="loader">Loading...</span>
         <div class="grid" id="relatedResults"></div>
     </section>
 
-    <!-- SECTION 6: Playlist / Albums API -->
+    <!-- SECTION 7: Playlist / Albums API -->
     <section id="playlist-section">
-        <h2>6. Album / Playlist API</h2>
+        <h2>7. Album / Playlist API</h2>
         <input type="text" id="playlistInput" value="PLMC9KNkIncKtPzgY-5rmhvj7fax8fdxoj" placeholder="Enter Playlist ID...">
         <button onclick="getPlaylist()">Load Collection</button>
         <span id="playlistLoader" class="loader">Loading...</span>
@@ -86,6 +102,9 @@
     </section>
 
     <script>
+        let extractedRawUrl = '';
+        let extractedFallbackUrl = '';
+
         async function fetchAPI(endpoint, loaderId) {
             document.getElementById(loaderId).style.display = 'inline';
             try {
@@ -138,9 +157,8 @@
             const data = await fetchAPI(`/api/song/${id}/raw-stream`, 'rawStreamLoader');
             document.getElementById('rawStreamResult').textContent = JSON.stringify(data, null, 2);
             if (data && data.url) {
-                const player = document.getElementById('rawAudioPlayer');
-                player.src = data.url;
-                player.play();
+                extractedRawUrl = data.url;
+                document.getElementById('rawActionContainer').style.display = 'block';
             }
         }
 
@@ -149,11 +167,47 @@
             const data = await fetchAPI(`/api/song/${id}/stream`, 'streamLoader');
             document.getElementById('streamResult').textContent = JSON.stringify(data, null, 2);
             if (data && data.url) {
-                const player = document.getElementById('audioPlayer');
-                player.src = data.url;
-                player.play();
+                extractedFallbackUrl = data.url;
+                document.getElementById('fallbackActionContainer').style.display = 'block';
             }
         }
+
+        // --- NEW UNIVERSAL PLAYER LOGIC --- //
+        function sendToPlayer(source) {
+            const targetUrl = source === 'raw' ? extractedRawUrl : extractedFallbackUrl;
+            document.getElementById('mediaUrlInput').value = targetUrl;
+
+            // Scroll down to the player smoothly
+            document.getElementById('universal-player-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function playMedia() {
+            const url = document.getElementById('mediaUrlInput').value;
+            if (!url) {
+                alert("Please enter or send a valid stream URL first.");
+                return;
+            }
+            const player = document.getElementById('mediaPlayer');
+            player.src = url;
+            player.play();
+        }
+
+        function downloadMedia() {
+            const url = document.getElementById('mediaUrlInput').value;
+            if (!url) {
+                alert("Please enter or send a valid stream URL first.");
+                return;
+            }
+            // Trigger download by opening URL in new tab/window, browser handles headers based on mimeType
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.download = 'media';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        // ---------------------------------- //
 
         async function getRelated() {
             const id = document.getElementById('relatedInput').value;
