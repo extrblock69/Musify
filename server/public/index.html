@@ -188,7 +188,7 @@
                 return;
             }
             const player = document.getElementById('mediaPlayer');
-            player.src = url;
+            player.src = "/api/stream-audio?url=" + encodeURIComponent(url);
             player.play();
         }
 
@@ -200,7 +200,7 @@
             }
             // Trigger download by opening URL in new tab/window, browser handles headers based on mimeType
             const a = document.createElement('a');
-            a.href = url;
+            a.href = "/api/stream-audio?url=" + encodeURIComponent(url);
             a.target = '_blank';
             a.download = 'media';
             document.body.appendChild(a);

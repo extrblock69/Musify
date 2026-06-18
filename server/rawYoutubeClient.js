@@ -1,22 +1,31 @@
 import axios from 'axios';
 
-// This is the exact payload used by youtube_explode_dart mapped from Musify's Android VR setup
-const androidVRPayload = {
-  "context": {
-    "client": {
-      "clientName": "ANDROID_VR",
-      "clientVersion": "1.65.10",
-      "deviceModel": "Quest 3",
-      "osVersion": "12L",
-      "osName": "Android",
-      "androidSdkVersion": "32",
-      "hl": "en",
-      "timeZone": "UTC",
-      "utcOffsetMinutes": 0
+// TVHTML5 Payload to bypass age-restrictions and severe bot blocks
+const tvHtml5Payload = {
+    "context": {
+      "client": {
+        "clientName": "TVHTML5",
+        "clientVersion": "7.20251105.10.00",
+        "deviceMake": "",
+        "deviceModel": "",
+        "userAgent": "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version,gzip(gfe)",
+        "hl": "en",
+        "timeZone": "UTC",
+        "gl": "US",
+        "utcOffsetMinutes": 0,
+        "originalUrl": "https://www.youtube.com/tv",
+        "theme": "CLASSIC",
+        "platform": "DESKTOP",
+        "clientFormFactor": "UNKNOWN_FORM_FACTOR",
+        "webpSupport": false,
+        "tvAppInfo": {"appQuality": "TV_APP_QUALITY_FULL_ANIMATION"},
+        "acceptHeader": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      },
+      "user": {"lockedSafetyMode": false},
+      "request": {"useSsl": true}
     },
-    "contextClientName": 28,
-    "requireJsPlayer": false
-  }
+    "contentCheckOk": true,
+    "racyCheckOk": true
 };
 
 const iosPayload = {
@@ -45,7 +54,7 @@ const iosPayload = {
 export async function fetchRawStreamManifest(videoId, proxiedAxiosClient = axios) {
     const url = 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false';
 
-    // Combine payload with the video ID we want to fetch
+    // Combine payload with the video ID we want to fetch. Fallback to IOS if TV fails.
     const payload = {
         ...iosPayload,
         videoId: videoId
@@ -91,8 +100,6 @@ export async function fetchRawStreamManifest(videoId, proxiedAxiosClient = axios
         const bestAudio = audioFormats[0];
 
         if (!bestAudio.url && bestAudio.signatureCipher) {
-            // Note: If we hit a cipher, the raw approach fails without executing JS to decipher it.
-            // Using the IOS client usually bypasses the cipher and provides direct URLs.
             throw new Error('Stream requires signature deciphering, which is not supported in the raw client. Try another proxy or wait.');
         }
 
