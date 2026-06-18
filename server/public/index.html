@@ -20,6 +20,7 @@
         pre { background: #000; padding: 10px; border-radius: 4px; overflow-x: auto; color: #0f0; }
         .loader { display: none; color: #D3BEAB; margin-top: 10px; }
         audio { width: 100%; margin-top: 15px; }
+        .highlight { border-left: 5px solid #D3BEAB; }
     </style>
 </head>
 <body>
@@ -44,28 +45,39 @@
         <pre id="detailsResult">Waiting for input...</pre>
     </section>
 
-    <!-- SECTION 3: Stream API -->
+    <!-- SECTION 3: Raw Spoofed Streaming API -->
+    <section id="raw-stream-section" class="highlight">
+        <h2>3. RAW Spoofed Stream & Play Audio API <span style="font-size:12px; font-weight:normal; color:#ccc">(Powered by direct youtube_explode_dart logic)</span></h2>
+        <p style="font-size: 14px; color: #aaa; margin-top: 0;">This endpoint natively replicates the exact JSON payload Client Spoofing and Proxy rotation logic, bypassing yt-dlp entirely.</p>
+        <input type="text" id="rawStreamInput" value="YQHsXMglC9A" placeholder="Enter YouTube ID...">
+        <button onclick="getRawStream()">Load RAW Audio Stream</button>
+        <span id="rawStreamLoader" class="loader">Testing proxies and extracting manifest...</span>
+        <audio id="rawAudioPlayer" controls></audio>
+        <pre id="rawStreamResult" style="margin-top:10px;">Waiting for input...</pre>
+    </section>
+
+    <!-- SECTION 4: Original yt-dlp Stream API -->
     <section id="stream-section">
-        <h2>3. Stream & Play Audio API</h2>
+        <h2>4. Stream & Play Audio API (Fallback/yt-dlp)</h2>
         <input type="text" id="streamInput" value="YQHsXMglC9A" placeholder="Enter YouTube ID...">
         <button onclick="getStream()">Load Audio Stream</button>
-        <span id="streamLoader" class="loader">Loading proxy... this may take a moment</span>
+        <span id="streamLoader" class="loader">Loading...</span>
         <audio id="audioPlayer" controls></audio>
         <pre id="streamResult" style="margin-top:10px;">Waiting for input...</pre>
     </section>
 
-    <!-- SECTION 4: Related API -->
+    <!-- SECTION 5: Related API -->
     <section id="related-section">
-        <h2>4. Related Videos API</h2>
+        <h2>5. Related Videos API</h2>
         <input type="text" id="relatedInput" value="YQHsXMglC9A" placeholder="Enter YouTube ID...">
         <button onclick="getRelated()">Find Related</button>
         <span id="relatedLoader" class="loader">Loading...</span>
         <div class="grid" id="relatedResults"></div>
     </section>
 
-    <!-- SECTION 5: Playlist / Albums API -->
+    <!-- SECTION 6: Playlist / Albums API -->
     <section id="playlist-section">
-        <h2>5. Album / Playlist API</h2>
+        <h2>6. Album / Playlist API</h2>
         <input type="text" id="playlistInput" value="PLMC9KNkIncKtPzgY-5rmhvj7fax8fdxoj" placeholder="Enter Playlist ID...">
         <button onclick="getPlaylist()">Load Collection</button>
         <span id="playlistLoader" class="loader">Loading...</span>
@@ -102,6 +114,7 @@
         function autoFill(ytid) {
             document.getElementById('detailsInput').value = ytid;
             document.getElementById('streamInput').value = ytid;
+            document.getElementById('rawStreamInput').value = ytid;
             document.getElementById('relatedInput').value = ytid;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -118,6 +131,17 @@
             const id = document.getElementById('detailsInput').value;
             const data = await fetchAPI(`/api/song/${id}/details`, 'detailsLoader');
             document.getElementById('detailsResult').textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function getRawStream() {
+            const id = document.getElementById('rawStreamInput').value;
+            const data = await fetchAPI(`/api/song/${id}/raw-stream`, 'rawStreamLoader');
+            document.getElementById('rawStreamResult').textContent = JSON.stringify(data, null, 2);
+            if (data && data.url) {
+                const player = document.getElementById('rawAudioPlayer');
+                player.src = data.url;
+                player.play();
+            }
         }
 
         async function getStream() {
